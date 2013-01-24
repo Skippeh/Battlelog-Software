@@ -1,5 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
+using System.Globalization;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -7,7 +9,7 @@ using BattleLib;
 
 namespace Testing
 {
-	class Program
+	static class Program
 	{
 		static void Main(string[] args)
 		{
@@ -48,6 +50,21 @@ namespace Testing
 					{
 						case 1:
 							{
+								var sw = Stopwatch.StartNew();
+								List<ServerResult> servers = BattleRequest.RequestServerList(null);
+
+								foreach (var server in servers)
+								{
+									Console.WriteLine(string.Format("{0} - {1}:{2} - {3}/{4}/{5} (plrs/max/queued) - last updated {6} sec ago", server.Name.Length > 20
+										                                                                                                            ? server.Name.Substring(0, 20) + "..."
+										                                                                                                            : server.Name,
+									                                server.IP, server.Port, server.Players, server.MaxPlayers, server.QueuedPlayers, server.LastUpdated.TimeOfDay.Seconds));
+								}
+								sw.Stop();
+
+								Console.WriteLine("Time to query servers: " + sw.Elapsed.TotalMilliseconds.ToString(CultureInfo.InvariantCulture) + "ms");
+								Console.ReadKey(true);
+
 								break;
 							}
 						case 2:
@@ -81,18 +98,18 @@ namespace Testing
 
 		private static string ReadLineCensored()
 		{
-			string password = string.Empty;
+			string input = string.Empty;
 
-			// Censor console input by intercepting the entered key and adding it to the password string. Abort if the entered key is the enter button.
+			// Censor console input by intercepting the entered key and adding it to the input string. Break out of the loop if the entered key is the enter button.
 			ConsoleKeyInfo info;
 			while ((info = Console.ReadKey(true)).Key != ConsoleKey.Enter)
 			{
-				password += info.KeyChar;
+				input += info.KeyChar;
 			}
 
 			Console.WriteLine(); // Copy the "new line after input" behaviour of Console.Read methods.
 
-			return password;
+			return input;
 		}
 	}
 }

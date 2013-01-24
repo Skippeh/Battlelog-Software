@@ -1,0 +1,51 @@
+namespace BattleLib
+{
+	/// <summary>
+	/// An enumeration of country regions.
+	/// </summary>
+	public enum Region
+	{
+		Canada,
+		UnitedStates,
+		Peru,
+		Colombia,
+		Uruguay,
+		Chile,
+		Argentina,
+		Mexico,
+		Brazil,
+		Antarctica,
+		SouthAfrica,
+		Croatia,
+		Slovakia,
+		Italy,
+		Norway,
+		Hungary,
+		CzechRepublic,
+		Austria,
+		Cyprus,
+		Sweden,
+		Israel,
+		Lithuania,
+		UnitedKingdom,
+		Germany,
+		SaudiArabia,
+		Finland,
+		Denmark,
+		Poland,
+		Bulgaria,
+		France,
+		Switzerland,
+		Russia,
+		Spain,
+		Netherlands,
+		Belgium,
+		China,
+		Japan,
+		HongKong,
+		SouthKorea,
+		Singapore,
+		NewZealand,
+		Australia,
+	}
+}

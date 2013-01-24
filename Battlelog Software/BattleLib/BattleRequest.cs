@@ -4,11 +4,14 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Net;
+using System.Runtime.Remoting;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading;
 using HtmlAgilityPack;
+using Newtonsoft.Json.Linq;
 using Redslide.HttpLib;
+using Newtonsoft.Json;
 
 namespace BattleLib
 {
@@ -64,7 +67,7 @@ namespace BattleLib
 			while (waiting)
 			{
 				// Wait for the callback.
-				Thread.Sleep(10);
+				Thread.Sleep(1);
 			}
 
 			// For debugging purposes.
@@ -87,13 +90,111 @@ namespace BattleLib
 		/// Requests the server list and returns found servers in a list.
 		/// </summary>
 		/// <param name="filter">The server filter to use.</param>
+		/// <param name="offset">The offset starting from 1. Higher = servers that would occur further down the server browser list.</param>
+		/// <param name="count">The number of servers to query for. Unsure what the max count is.</param>
 		/// <returns></returns>
-		/// <exception cref="System.NotImplementedException"></exception>
-		public static List<ServerResult> RequestServerList(ServerFilter filter)
+		public static List<ServerResult> RequestServerList(ServerFilter filter, int offset = 1, int count = 15)
 		{
+			string json = GetJsonResponse(string.Format("http://battlelog.battlefield.com/bf3/servers/getAutoBrowseServers/?offset={0}&count={1}", offset, count));
 
+			var result = new List<ServerResult>();
 
-			throw new NotImplementedException();
+			var dict = JsonConvert.DeserializeObject<Dictionary<string, object>>(json);
+
+			if (dict["type"].ToString() == "success")
+			{
+				var data = (JArray) dict["data"];
+
+				for (int i = 0; i < data.Count; ++i)
+				{
+					var info = (JObject) data[i];
+
+					var sr = new ServerResult();
+
+					sr.Country = info["country"].Value<String>();
+					
+					// Get all values for ExtendedInfo.
+					var extendedInfo = info["extendedInfo"];
+					string bannerUrl = extendedInfo["bannerUrl"].Value<string>();
+					string description = extendedInfo["desc"].Value<string>();
+					string message = extendedInfo["message"].Value<string>();
+					sr.ExtendedInfo = new ExtendedInfo(bannerUrl, description, message);
+
+					sr.GameExpansion = JsonHelper.ReadExpansion(info["gameExpansion"]);
+
+					// Get all expansions.
+					var jsonExpansions = info["gameExpansions"].ToList();
+
+					sr.GameExpansions = new List<Expansion>(); // Instantiate the list so we can add items to it.
+					jsonExpansions.ForEach(expansion => sr.GameExpansions.Add(JsonHelper.ReadExpansion(expansion))); // Add all the expansions to the server result's GameExpansions list.
+
+					sr.GameId = info["gameId"].Value<long>();
+
+					sr.Guid = info["guid"].Value<string>();
+
+					sr.Url = "http://battlelog.battlefield.com/bf3/servers/show/" + sr.Guid;
+
+					sr.HasPassword = info["hasPassword"].Value<bool>();
+
+					sr.IP = info["ip"].Value<string>();
+
+					sr.Level = JsonHelper.ReadLevel(info["map"]);
+
+					sr.MaxPlayers = info["maxPlayers"].Value<int>();
+
+					sr.Players = info["numPlayers"].Value<int>();
+
+					sr.QueuedPlayers = info["numQueued"].Value<int>();
+
+					sr.Name = info["name"].Value<string>();
+
+					sr.Ping = info["ping"].Value<int>();
+
+					sr.Port = info["port"].Value<int>();
+
+					sr.GamePreset = JsonHelper.ReadPreset(info["preset"]);
+
+					sr.HasPunkbuster = info["punkbuster"].Value<bool>();
+
+					sr.Ranked = info["ranked"].Value<bool>();
+
+					sr.Region = JsonHelper.ReadRegion(info["region"]);
+
+					sr.LastUpdated = DateTime.Now - (DateTime.Now - DateTime.FromBinary(info["updatedAt"].Value<long>()));
+
+					result.Add(sr);
+				}
+			}
+			else
+			{
+				throw new ServerException("The server did not succeed in supplying server list. (type = " + dict["type"].ToString() + ")");
+			}
+
+			return result;
+		}
+
+		/// <summary>
+		/// Gets a json response from the battlelog server by adding a header saying we want it in json.
+		/// </summary>
+		/// <param name="url">The URL.</param>
+		/// <returns></returns>
+		public static string GetJsonResponse(string url)
+		{
+			string response = string.Empty;
+
+			Action<string> onSuccessCallback = s => response = s;
+
+			Request.Get(url, onSuccessCallback, new WebHeaderCollection()
+				{
+					{"X-Requested-With", "XMLHttpRequest"} // Tell battlelog we want it in json.
+				});
+
+			while (response == string.Empty)
+			{
+				Thread.Sleep(1); // Wait for the response.
+			}
+
+			return response;
 		}
 	}
 }

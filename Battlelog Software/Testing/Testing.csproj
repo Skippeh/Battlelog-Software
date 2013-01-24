@@ -49,7 +49,7 @@
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\BattleLib\BattleLib.csproj">
-      <Project>{e2754735-4e95-447c-b868-598e9ddba815}</Project>
+      <Project>{61DB91CA-F800-4819-A5F1-36E694E9A009}</Project>
       <Name>BattleLib</Name>
     </ProjectReference>
   </ItemGroup>
